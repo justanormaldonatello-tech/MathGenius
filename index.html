@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MathGenius — Desafio Matemático</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }
+        .animate-shake{animation:shake .3s ease-in-out}
+        .btn-option{transition:all .2s}
+        .btn-option:active{transform:scale(.95)}
+
+        :root{--c-app:#0f172a;--c-card:#1e293b;--c-header:rgba(15,23,42,.5);--c-inner:rgba(15,23,42,.5);--c-inner-strong:rgba(15,23,42,.8);--c-border:#334155;--c-border-soft:rgba(51,65,85,.4);--c-text:#f1f5f9;--c-text-dim:#94a3b8;--c-text-muted:#64748b;--c-option:#334155;--c-option-hover:#475569;--c-problem:rgba(15,23,42,.5);--c-eq:#fff;--c-eq-muted:#64748b;--c-track:#334155}
+        [data-theme="light"]{--c-app:#e2e8f0;--c-card:#fff;--c-header:rgba(241,245,249,.85);--c-inner:rgba(248,250,252,.8);--c-inner-strong:rgba(241,245,249,.95);--c-border:#cbd5e1;--c-border-soft:rgba(203,213,225,.5);--c-text:#1e293b;--c-text-dim:#64748b;--c-text-muted:#94a3b8;--c-option:#fff;--c-option-hover:#f1f5f9;--c-problem:rgba(241,245,249,.6);--c-eq:#0f172a;--c-eq-muted:#94a3b8;--c-track:#cbd5e1}
+
+        .t-app{background-color:var(--c-app)} .t-card{background-color:var(--c-card)} .t-header{background-color:var(--c-header)}
+        .t-inner{background-color:var(--c-inner)} .t-inner-strong{background-color:var(--c-inner-strong)}
+        .t-border{border-color:var(--c-border)} .t-border-soft{border-color:var(--c-border-soft)}
+        .t-text{color:var(--c-text)} .t-text-dim{color:var(--c-text-dim)} .t-text-muted{color:var(--c-text-muted)}
+        .t-option{background-color:var(--c-option);color:var(--c-text)} .t-option:hover{background-color:var(--c-option-hover)}
+        .t-eq{color:var(--c-eq)} .t-eq-muted{color:var(--c-eq-muted)} .progress-track{background-color:var(--c-track)}
+
+        [data-theme="dark"] .theme-icon-light{display:none!important}
+        [data-theme="light"] .theme-icon-dark{display:none!important}
+
+        .mode-card,.cat-card,.setting-card{border:2px solid var(--c-border-soft);background-color:var(--c-inner);transition:all .2s;cursor:pointer}
+        .mode-card:hover,.cat-card:hover,.setting-card:hover{border-color:var(--c-border);transform:scale(1.02)}
+        .mode-card.selected,.setting-card.selected{border-color:#6366f1!important;background-color:rgba(99,102,241,.12)!important}
+        .cat-card{display:flex;flex-direction:column;align-items:center;gap:.25rem;padding:1.5rem 1rem;border-radius:1rem}
+        .setting-card{text-align:center;padding:.6rem;border-radius:.75rem;font-weight:bold;color:var(--c-text)}
+
+        .diff-card{opacity:.5;transition:all .2s}
+        .diff-card:hover{opacity:.75}
+        .diff-card.selected{opacity:1;transform:scale(1.03)}
+
+        #problem-display{border-color:var(--c-border);background-color:var(--c-problem)}
+        #problem-display[data-state="correct"]{border-color:#10b981!important;background-color:rgba(16,185,129,.1)!important}
+        #problem-display[data-state="wrong"]{border-color:#ef4444!important;background-color:rgba(239,68,68,.1)!important}
+
+        .btn-option[data-result="correct"]{background-color:#10b981!important;color:#fff!important}
+        .btn-option[data-result="wrong"]{background-color:#ef4444!important;color:#fff!important}
+
+        #stat-timer[data-low="true"]{color:#f87171!important}
+        .timer-icon-low{background-color:rgba(239,68,68,.2)!important;color:#f87171!important}
+        #equation sup{font-size:.55em;vertical-align:super;line-height:0}
+    </style>
+</head>
+<body class="t-app min-h-screen flex items-center justify-center p-4 font-sans select-none transition-colors duration-300">
+<div class="max-w-md w-full t-card rounded-3xl shadow-2xl overflow-hidden border t-border transition-colors duration-300">
+
+    <!-- Header -->
+    <header class="t-header p-4 border-b t-border flex justify-between items-center transition-colors duration-300">
+        <div class="flex items-center gap-2 text-indigo-400">
+            <button id="back-btn" onclick="showCategory()" class="hidden p-1 rounded-lg hover:bg-indigo-500/20 transition-colors"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
+            <i data-lucide="brain" class="w-6 h-6"></i>
+            <h1 class="text-lg font-bold tracking-wider uppercase t-text">MathGenius</h1>
+        </div>
+        <div class="flex items-center gap-2">
+            <div id="high-score-display" class="hidden flex items-center gap-1 text-amber-400 text-sm font-semibold"><i data-lucide="trophy" class="w-4 h-4"></i><span>Recorde: <span id="high-score-value">0</span></span></div>
+            <button onclick="toggleTheme()" class="p-2 rounded-lg t-inner border t-border hover:scale-110 transition-transform"><i data-lucide="sun" class="w-5 h-5 t-text-dim theme-icon-dark"></i><i data-lucide="moon" class="w-5 h-5 t-text-dim theme-icon-light"></i></button>
+            <button id="quit-btn" onclick="endGame()" class="hidden flex items-center gap-1 px-3 py-2 rounded-lg bg-red-500/20 text-red-400 text-sm font-semibold hover:bg-red-500/30 transition-colors"><i data-lucide="x" class="w-4 h-4"></i><span>Sair</span></button>
+        </div>
+    </header>
+
+    <div class="p-6 min-h-[520px]">
+
+        <!-- TELA: CATEGORIA -->
+        <div id="category-screen" class="space-y-6">
+            <div class="text-center space-y-2">
+                <div class="mx-auto w-20 h-20 bg-indigo-500/20 rounded-full flex items-center justify-center"><i data-lucide="calculator" class="w-10 h-10 text-indigo-400"></i></div>
+                <h2 class="text-2xl font-bold t-text">MathGenius</h2>
+                <p class="t-text-muted text-sm">Escolha a área da matemática</p>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <button onclick="selectCategory('aritmetica')" class="cat-card"><i data-lucide="plus" class="w-8 h-8 text-amber-400"></i><span class="font-bold t-text">Aritmética</span><span class="text-xs t-text-muted">Operações e contas</span></button>
+                <button onclick="selectCategory('geometria')" class="cat-card"><i data-lucide="triangle" class="w-8 h-8 text-cyan-400"></i><span class="font-bold t-text">Geometria</span><span class="text-xs t-text-muted">Pitágoras, Tales, Trigo</span></button>
+                <button onclick="selectCategory('enem')" class="cat-card"><i data-lucide="graduation-cap" class="w-8 h-8 text-emerald-400"></i><span class="font-bold t-text">ENEM</span><span class="text-xs t-text-muted">Questões estilo ENEM</span></button>
+                <button onclick="selectCategory('obmep')" class="cat-card"><i data-lucide="medal" class="w-8 h-8 text-purple-400"></i><span class="font-bold t-text">OBMEP</span><span class="text-xs t-text-muted">Olimpíada de Matemática</span></button>
+            </div>
+        </div>
+
+        <!-- TELA: CONFIGURAÇÕES -->
+        <div id="settings-screen" class="hidden space-y-5">
+            <h2 class="text-xl font-bold t-text" id="settings-title">Configurações</h2>
+
+            <div class="space-y-2"><p class="text-xs t-text-muted uppercase font-bold tracking-wider">Modo de Jogo</p>
+                <div class="grid grid-cols-2 gap-2">
+                    <button class="mode-card selected p-3 rounded-xl text-left" data-gamemode="classic" onclick="selectGameMode('classic')"><span class="font-bold t-text text-sm">⏱️ Clássico</span><p class="text-[10px] t-text-muted">Com timer</p></button>
+                    <button class="mode-card p-3 rounded-xl text-left" data-gamemode="notime" onclick="selectGameMode('notime')"><span class="font-bold t-text text-sm">♾️ Sem Tempo</span><p class="text-[10px] t-text-muted">Sem pressa</p></button>
+                    <button class="mode-card p-3 rounded-xl text-left" data-gamemode="q50" onclick="selectGameMode('q50')"><span class="font-bold t-text text-sm">📝 50 Questões</span><p class="text-[10px] t-text-muted">Fixo</p></button>
+                    <button class="mode-card p-3 rounded-xl text-left" data-gamemode="q100" onclick="selectGameMode('q100')"><span class="font-bold t-text text-sm">📚 100 Questões</span><p class="text-[10px] t-text-muted">Fixo</p></button>
+                </div>
+            </div>
+
+            <div id="section-difficulty" class="space-y-2"><p class="text-xs t-text-muted uppercase font-bold tracking-wider">Dificuldade</p>
+                <div class="grid grid-cols-2 gap-2">
+                    <button class="diff-card selected py-2 bg-emerald-600 text-white rounded-xl font-bold transition-all" data-diff="facil" onclick="selectDifficulty('facil')"><span class="block text-sm">Fácil</span><span class="block text-[10px] opacity-80">+ − ×</span></button>
+                    <button class="diff-card py-2 bg-blue-600 text-white rounded-xl font-bold transition-all" data-diff="medio" onclick="selectDifficulty('medio')"><span class="block text-sm">Médio</span><span class="block text-[10px] opacity-80">+ − × ÷</span></button>
+                    <button class="diff-card py-2 bg-red-600 text-white rounded-xl font-bold transition-all" data-diff="dificil" onclick="selectDifficulty('dificil')"><span class="block text-sm">Difícil</span><span class="block text-[10px] opacity-80">Ensino Médio</span></button>
+                    <button class="diff-card py-2 bg-purple-600 text-white rounded-xl font-bold transition-all" data-diff="hardcore" onclick="selectDifficulty('hardcore')"><span class="block text-sm flex items-center justify-center gap-1">Hardcore 🔥</span><span class="block text-[10px] opacity-80">Nível Superior</span></button>
+                    <button class="diff-card col-span-2 py-2 bg-slate-600 text-white rounded-xl font-bold transition-all flex items-center justify-center gap-2" data-diff="misto" onclick="selectDifficulty('misto')"><i data-lucide="shuffle" class="w-4 h-4"></i><span class="text-sm">Misto</span></button>
+                </div>
+            </div>
+
+            <div id="section-terms" class="space-y-2"><p class="text-xs t-text-muted uppercase font-bold tracking-wider">Nº de termos por questão</p>
+                <div class="grid grid-cols-3 gap-2">
+                    <button class="setting-card selected" data-terms="2" onclick="selectTerms(2)">2</button>
+                    <button class="setting-card" data-terms="3" onclick="selectTerms(3)">3</button>
+                    <button class="setting-card" data-terms="4" onclick="selectTerms(4)">4</button>
+                    <button class="setting-card" data-terms="5" onclick="selectTerms(5)">5</button>
+                    <button class="setting-card" data-terms="6" onclick="selectTerms(6)">6</button>
+                    <button class="setting-card" data-terms="7" onclick="selectTerms(7)">7</button>
+                </div>
+            </div>
+
+            <div id="section-topic" class="hidden space-y-2"><p class="text-xs t-text-muted uppercase font-bold tracking-wider">Tópicos</p>
+                <div class="grid grid-cols-2 gap-2">
+                    <button class="setting-card selected" data-topic="pitagoras" onclick="selectTopic('pitagoras')">Pitágoras</button>
+                    <button class="setting-card" data-topic="tales" onclick="selectTopic('tales')">Tales</button>
+                    <button class="setting-card" data-topic="trigo" onclick="selectTopic('trigo')">Seno/Coss/Tg</button>
+                    <button class="setting-card" data-topic="misto" onclick="selectTopic('misto')">Misto</button>
+                </div>
+            </div>
+
+            <div class="space-y-2"><p class="text-xs t-text-muted uppercase font-bold tracking-wider">Ao errar</p>
+                <div class="grid grid-cols-2 gap-2">
+                    <button class="setting-card" data-wrong="pass" onclick="selectWrongBehavior('pass')"><span class="block text-sm">Passar</span><span class="block text-[10px] opacity-70 font-normal">Próxima questão</span></button>
+                    <button class="setting-card selected" data-wrong="stay" onclick="selectWrongBehavior('stay')"><span class="block text-sm">Continuar</span><span class="block text-[10px] opacity-70 font-normal">Tenta de novo</span></button>
+                </div>
+            </div>
+
+            <div id="section-timer" class="space-y-2"><p class="text-xs t-text-muted uppercase font-bold tracking-wider">Tempo (minutos)</p>
+                <div class="grid grid-cols-3 gap-2">
+                    <button class="setting-card selected" data-min="1" onclick="selectMinutes(1)">1 min</button>
+                    <button class="setting-card" data-min="2" onclick="selectMinutes(2)">2 min</button>
+                    <button class="setting-card" data-min="3" onclick="selectMinutes(3)">3 min</button>
+                    <button class="setting-card" data-min="5" onclick="selectMinutes(5)">5 min</button>
+                    <button class="setting-card" data-min="10" onclick="selectMinutes(10)">10 min</button>
+                    <button class="setting-card" data-min="15" onclick="selectMinutes(15)">15 min</button>
+                </div>
+            </div>
+
+            <div id="section-bonus" class="space-y-2"><p class="text-xs t-text-muted uppercase font-bold tracking-wider">Bônus +30s por acerto</p>
+                <div class="grid grid-cols-2 gap-2">
+                    <button class="setting-card selected" data-bonus="false" onclick="selectBonus(false)">Não</button>
+                    <button class="setting-card" data-bonus="true" onclick="selectBonus(true)">Sim</button>
+                </div>
+            </div>
+
+            <button onclick="startGame()" class="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-bold text-xl flex items-center justify-center gap-2 transition-transform hover:scale-[1.02] active:scale-95"><i data-lucide="play" class="w-6 h-6"></i><span>Jogar</span></button>
+        </div>
+
+        <!-- TELA: JOGO -->
+        <div id="game-screen" class="hidden space-y-5">
+            <div class="t-inner-strong p-3 rounded-2xl border t-border-soft space-y-3 transition-colors duration-300">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center gap-2"><div id="timer-icon-bg" class="flex items-center justify-center w-10 h-10 rounded-xl bg-blue-500/20 text-blue-400"><i data-lucide="timer" class="w-5 h-5"></i></div><div><p class="text-[10px] t-text-muted uppercase font-bold tracking-wider" id="stat-timer-label">Tempo</p><p class="text-xl font-bold t-text" id="stat-timer">1:00</p></div></div>
+                    <div class="flex items-center gap-2"><div class="text-right"><p class="text-[10px] t-text-muted uppercase font-bold tracking-wider">Acertos</p><p class="text-xl font-bold text-emerald-400" id="stat-score">0</p></div><div class="flex items-center justify-center w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400"><i data-lucide="check" class="w-5 h-5"></i></div></div>
+                    <div class="flex items-center gap-2"><div class="text-right"><p class="text-[10px] t-text-muted uppercase font-bold tracking-wider">Erros</p><p class="text-xl font-bold text-red-400" id="stat-errors">0</p></div><div class="flex items-center justify-center w-10 h-10 rounded-xl bg-red-500/20 text-red-400"><i data-lucide="x" class="w-5 h-5"></i></div></div>
+                </div>
+                <div id="progress-section" class="hidden"><div class="flex justify-between items-center mb-1"><span class="text-[10px] t-text-muted font-semibold uppercase tracking-wider">Progresso</span><span class="text-[10px] t-text-dim font-bold" id="progress-text">0%</span></div><div class="w-full rounded-full h-2 overflow-hidden progress-track"><div id="progress-bar" class="bg-indigo-500 h-full rounded-full transition-all duration-300" style="width:0%"></div></div></div>
+            </div>
+            <div id="problem-display" class="relative py-10 rounded-3xl text-center border-2 transition-colors duration-200">
+                <i data-lucide="check-circle-2" class="hidden absolute top-4 right-4 text-emerald-500 w-6 h-6" id="feedback-correct"></i>
+                <i data-lucide="x-circle" class="hidden absolute top-4 right-4 text-red-500 w-6 h-6" id="feedback-wrong"></i>
+                <h2 class="font-black tracking-tight px-4"><span id="equation" class="t-eq">? + ?</span></h2>
+            </div>
+            <div class="grid grid-cols-2 gap-3" id="options-container"></div>
+        </div>
+
+        <!-- TELA: FIM DE JOGO -->
+        <div id="gameover-screen" class="hidden text-center space-y-5 py-4">
+            <div class="mx-auto w-20 h-20 bg-amber-500/20 rounded-full flex items-center justify-center"><i data-lucide="trophy" class="w-10 h-10 text-amber-400"></i></div>
+            <h2 class="text-2xl font-bold t-text" id="gameover-title">Fim de Jogo!</h2>
+            <div class="t-inner-strong rounded-2xl p-6 border t-border-soft"><p class="t-text-muted text-xs uppercase tracking-wider font-bold mb-1">Acertos</p><div class="flex items-baseline justify-center gap-1"><p class="text-5xl font-black text-emerald-400" id="final-score">0</p><p class="text-2xl font-bold t-text-muted" id="final-total"></p></div></div>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="t-inner rounded-2xl p-4 border t-border-soft"><p class="t-text-muted text-xs uppercase tracking-wider font-bold mb-1">Erros</p><p class="text-3xl font-black text-red-400" id="final-errors">0</p></div>
+                <div class="t-inner rounded-2xl p-4 border t-border-soft"><p class="t-text-muted text-xs uppercase tracking-wider font-bold mb-1">Precisão</p><p class="text-3xl font-black text-indigo-400" id="final-accuracy">0%</p></div>
+            </div>
+            <div id="new-record" class="hidden flex items-center justify-center gap-2 text-amber-400 font-bold"><i data-lucide="award" class="w-5 h-5"></i><span>Novo Recorde!</span></div>
+            <div class="space-y-3">
+                <button onclick="startGame()" class="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-bold text-lg flex items-center justify-center gap-2 transition-transform hover:scale-[1.02] active:scale-95"><i data-lucide="rotate-ccw" class="w-5 h-5"></i><span>Jogar Novamente</span></button>
+                <button onclick="showCategory()" class="w-full py-3 t-inner border t-border t-text rounded-2xl font-bold transition-transform hover:scale-[1.02] active:scale-95">Menu Principal</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ===== ESTADO =====
+let theme='dark', highScores={};
+const sel={category:'aritmetica',mode:'classic',difficulty:'facil',numTerms:2,topic:'pitagoras',wrongBehavior:'stay',timerMinutes:1,timeBonus:false};
+const game={isActive:false,category:null,mode:null,difficulty:null,numTerms:2,topic:null,wrongBehavior:'stay',timerMinutes:1,timeBonus:false,score:0,errors:0,timeLeft:0,questionNum:0,totalQuestions:0,timerInterval:null,currentProblem:null,isProcessing:false};
+
+const screens={category:document.getElementById('category-screen'),settings:document.getElementById('settings-screen'),game:document.getElementById('game-screen'),gameover:document.getElementById('gameover-screen')};
+const ui={equation:document.getElementById('equation'),options:document.getElementById('options-container'),problemDisplay:document.getElementById('problem-display'),h2:document.querySelector('#problem-display h2'),feedbackCorrect:document.getElementById('feedback-correct'),feedbackWrong:document.getElementById('feedback-wrong'),statTimer:document.getElementById('stat-timer'),statTimerLabel:document.getElementById('stat-timer-label'),statScore:document.getElementById('stat-score'),statErrors:document.getElementById('stat-errors'),timerIconBg:document.getElementById('timer-icon-bg'),progressSection:document.getElementById('progress-section'),progressBar:document.getElementById('progress-bar'),progressText:document.getElementById('progress-text'),quitBtn:document.getElementById('quit-btn'),backBtn:document.getElementById('back-btn'),highScoreDisplay:document.getElementById('high-score-display'),highScoreValue:document.getElementById('high-score-value'),finalScore:document.getElementById('final-score'),finalTotal:document.getElementById('final-total'),finalErrors:document.getElementById('final-errors'),finalAccuracy:document.getElementById('final-accuracy'),gameoverTitle:document.getElementById('gameover-title'),newRecord:document.getElementById('new-record')};
+
+// ===== INIT =====
+function init(){theme=localStorage.getItem('mathgenius_theme')||'dark';document.documentElement.setAttribute('data-theme',theme);highScores=JSON.parse(localStorage.getItem('mathgenius_highscores')||'{}');lucide.createIcons();}
+function toggleTheme(){theme=theme==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',theme);localStorage.setItem('mathgenius_theme',theme);}
+
+// ===== NAVEGAÇÃO =====
+function showScreen(name){
+    Object.values(screens).forEach(s=>s.classList.add('hidden'));
+    screens[name].classList.remove('hidden');
+    ui.backBtn.classList.toggle('hidden',name!=='settings');
+    ui.quitBtn.classList.toggle('hidden',name!=='game');
+    if(name==='settings')updateHighScoreDisplay();else ui.highScoreDisplay.classList.add('hidden');
+}
+function selectCategory(cat){
+    sel.category=cat;
+    document.getElementById('settings-title').innerText={aritmetica:'Aritmética',geometria:'Geometria & Trigonometria',enem:'Matemática ENEM',obmep:'Matemática OBMEP'}[cat];
+    updateSettingsVisibility();showScreen('settings');
+}
+function showCategory(){clearInterval(game.timerInterval);game.timerInterval=null;game.isActive=false;showScreen('category');}
+
+// ===== SELEÇÕES =====
+function selectGameMode(m){sel.mode=m;document.querySelectorAll('[data-gamemode]').forEach(b=>b.classList.remove('selected'));document.querySelector(`[data-gamemode="${m}"]`).classList.add('selected');updateSettingsVisibility();updateHighScoreDisplay();}
+function selectDifficulty(d){sel.difficulty=d;document.querySelectorAll('[data-diff]').forEach(b=>b.classList.remove('selected'));document.querySelector(`[data-diff="${d}"]`).classList.add('selected');}
+function selectTerms(n){sel.numTerms=n;document.querySelectorAll('[data-terms]').forEach(b=>b.classList.remove('selected'));document.querySelector(`[data-terms="${n}"]`).classList.add('selected');}
+function selectTopic(t){sel.topic=t;document.querySelectorAll('[data-topic]').forEach(b=>b.classList.remove('selected'));document.querySelector(`[data-topic="${t}"]`).classList.add('selected');}
+function selectWrongBehavior(b){sel.wrongBehavior=b;document.querySelectorAll('[data-wrong]').forEach(el=>el.classList.remove('selected'));document.querySelector(`[data-wrong="${b}"]`).classList.add('selected');}
+function selectMinutes(m){sel.timerMinutes=m;document.querySelectorAll('[data-min]').forEach(b=>b.classList.remove('selected'));document.querySelector(`[data-min="${m}"]`).classList.add('selected');}
+function selectBonus(b){sel.timeBonus=b;document.querySelectorAll('[data-bonus]').forEach(el=>el.classList.remove('selected'));document.querySelector(`[data-bonus="${b}"]`).classList.add('selected');}
+function updateSettingsVisibility(){
+    const isA=sel.category==='aritmetica',isG=sel.category==='geometria';
+    document.getElementById('section-difficulty').classList.toggle('hidden',!isA);
+    document.getElementById('section-terms').classList.toggle('hidden',!isA);
+    document.getElementById('section-topic').classList.toggle('hidden',!isG);
+    const hasTimer=sel.mode==='classic';
+    document.getElementById('section-timer').classList.toggle('hidden',!hasTimer);
+    document.getElementById('section-bonus').classList.toggle('hidden',!hasTimer);
+}
+function updateHighScoreDisplay(){const k=`${sel.category}_${sel.mode}`;const s=highScores[k]||0;ui.highScoreValue.innerText=s;if(s>0)ui.highScoreDisplay.classList.remove('hidden');else ui.highScoreDisplay.classList.add('hidden');}
+
+// ===== INICIAR JOGO =====
+function startGame(){
+    clearInterval(game.timerInterval);
+    Object.assign(game,{isActive:true,category:sel.category,mode:sel.mode,difficulty:sel.difficulty,numTerms:sel.numTerms,topic:sel.topic,wrongBehavior:sel.wrongBehavior,timerMinutes:sel.timerMinutes,timeBonus:sel.timeBonus,score:0,errors:0,questionNum:0,isProcessing:false});
+    if(game.mode==='classic'){game.timeLeft=game.timerMinutes*60;game.totalQuestions=0;ui.progressSection.classList.add('hidden');}
+    else if(game.mode==='notime'){game.timeLeft=0;game.totalQuestions=0;ui.progressSection.classList.add('hidden');}
+    else if(game.mode==='q50'){game.totalQuestions=50;game.timeLeft=0;ui.progressSection.classList.remove('hidden');}
+    else if(game.mode==='q100'){game.totalQuestions=100;game.timeLeft=0;ui.progressSection.classList.remove('hidden');}
+    updateStats();updateStatusBar();showScreen('game');nextProblem();
+    if(game.mode==='classic')game.timerInterval=setInterval(()=>{game.timeLeft--;updateTimer();if(game.timeLeft<=0)endGame();},1000);
+}
+
+// ===== STATUS =====
+function updateStatusBar(){
+    if(game.mode==='classic'){ui.statTimerLabel.innerText='Tempo';ui.timerIconBg.className='flex items-center justify-center w-10 h-10 rounded-xl bg-blue-500/20 text-blue-400';updateTimer();}
+    else if(game.mode==='notime'){ui.statTimerLabel.innerText='Modo';ui.statTimer.innerText='∞';ui.statTimer.removeAttribute('data-low');ui.timerIconBg.className='flex items-center justify-center w-10 h-10 rounded-xl bg-purple-500/20 text-purple-400';}
+    else{ui.statTimerLabel.innerText='Questão';ui.statTimer.innerText=`${game.questionNum}/${game.totalQuestions}`;ui.statTimer.removeAttribute('data-low');ui.timerIconBg.className='flex items-center justify-center w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-400';}
+}
+function formatTime(s){return`${Math.floor(s/60)}:${(s%60).toString().padStart(2,'0')}`;}
+function updateTimer(){const t=Math.max(0,game.timeLeft);ui.statTimer.innerText=formatTime(t);if(game.timeLeft<=10&&game.timeLeft>0){ui.statTimer.setAttribute('data-low','true');ui.timerIconBg.classList.add('timer-icon-low','animate-pulse');}else{ui.statTimer.removeAttribute('data-low');ui.timerIconBg.classList.remove('timer-icon-low','animate-pulse');}}
+function updateStats(){ui.statScore.innerText=game.score;ui.statErrors.innerText=game.errors;if(game.mode==='q50'||game.mode==='q100'){ui.statTimer.innerText=`${game.questionNum}/${game.totalQuestions}`;const p=(game.questionNum/game.totalQuestions)*100;ui.progressBar.style.width=`${p}%`;ui.progressText.innerText=`${Math.round(p)}%`;}}
+
+// ===== HELPERS =====
+function factorial(n){let r=1;for(let i=2;i<=n;i++)r*=i;return r;}
+function gcd(a,b){return b===0?a:gcd(b,a%b);}
+function lcm(a,b){return(a*b)/gcd(a,b);}
+function isPrime(n){if(n<2)return false;for(let i=2;i*i<=n;i++)if(n%i===0)return false;return true;}
+function safeEval(expr){if(!/^[\d\s+\-*()]+$/.test(expr))return null;try{return eval(expr);}catch{return null;}}
+function randInt(min,max){return Math.floor(Math.random()*(max-min+1))+min;}
+function pick(arr){return arr[Math.floor(Math.random()*arr.length)];}
+
+// ===== GERADOR DE OPÇÕES ERRADAS =====
+function generateWrongOptions(answer,difficulty){
+    const opts=new Set([answer]);const isDec=!Number.isInteger(answer);
+    let bv;
+    if(isDec)bv=Math.max(.1,Math.abs(answer)*.2);
+    else{const a=Math.abs(answer);if(a<=10)bv=4;else if(a<=100)bv=Math.floor(a*.15)+2;else bv=Math.floor(a*.12)+5;}
+    if(difficulty==='hardcore')bv*=1.5;
+    let att=0;
+    while(opts.size<4&&att<100){att++;let v,w;
+        if(isDec){v=Math.round((Math.random()*bv+.1)*100)/100;const s=Math.random()>.5?1:-1;w=Math.round((answer+v*s)*100)/100;}
+        else{v=Math.floor(Math.random()*bv)+1;const s=Math.random()>.5?1:-1;w=answer+v*s;}
+        if(w<0)w=Math.abs(w);
+        if(Math.abs(w-answer)>=(isDec?.03:1))opts.add(w);
+    }
+    let fb=isDec?Math.round((answer+.5)*100)/100:answer+1;
+    while(opts.size<4){if(Math.abs(fb-answer)>=(isDec?.03:1))opts.add(fb);fb=isDec?Math.round((fb+.5)*100)/100:fb+1;}
+    return Array.from(opts).sort(()=>Math.random()-.5);
+}
+function formatOption(v){return Number.isInteger(v)?v.toString():parseFloat(v.toFixed(2)).toString();}
+function answersMatch(s,c){return Math.abs(Number(s)-c)<.02;}
+
+// ===== PONTOS PITAGÓRICOS =====
+const pythTriples=[[3,4,5],[5,12,13],[6,8,10],[7,24,25],[8,15,17],[9,12,15],[9,40,41],[10,24,26],[12,16,20],[15,20,25],[20,21,29],[12,35,37],[16,30,34],[18,24,30],[24,32,40],[14,48,50],[27,36,45],[30,40,50]];
+const trigValues={sen:{0:0,30:.5,45:.71,60:.87,90:1},cos:{0:1,30:.87,45:.71,60:.5,90:0},tg:{0:0,30:.58,45:1,60:1.73}};
+
+// ===== GERADORES — ARITMÉTICA =====
+function generateAritmetica(){
+    let d=game.difficulty;
+    if(d==='misto')d=pick(['facil','medio','dificil','hardcore']);
+    let p;
+    if(game.numTerms===2){
+        if(d==='hardcore'&&Math.random()<.35)p=genHardcoreCombined();else p=genSingleOp(d);
+    }else{p=genMultiTerm(d,game.numTerms,d==='hardcore');}
+    p.options=generateWrongOptions(p.answer,d);return p;
+}
+function genSingleOp(d){
+    let ops;const opMap={facil:['+','-','*'],medio:['+','-','*','/'],dificil:['+','-','*','/','^'],hardcore:['+','-','*','/','^','!','√']};
+    ops=opMap[d];const op=pick(ops);let text,answer;
+    if(op==='+'){const mx=d==='facil'?20:d==='medio'?100:d==='dificil'?500:1000;const n1=randInt(1,mx),n2=randInt(1,mx);answer=n1+n2;text=`${n1} + ${n2}`;}
+    else if(op==='-'){const mx=d==='facil'?20:d==='medio'?100:d==='dificil'?500:1000;let n1=randInt(5,mx+5),n2=randInt(1,mx);if(n1<n2)[n1,n2]=[n2,n1];answer=n1-n2;text=`${n1} − ${n2}`;}
+    else if(op==='*'){const mx=d==='facil'?5:d==='medio'?12:d==='dificil'?20:25;const n1=randInt(2,mx),n2=randInt(2,mx);answer=n1*n2;text=`${n1} × ${n2}`;}
+    else if(op==='/'){const mx=d==='medio'?10:d==='dificil'?20:25;const dv=randInt(2,mx),r=randInt(2,mx);answer=r;text=`${dv*r} ÷ ${dv}`;}
+    else if(op==='^'){const mx=d==='dificil'?12:15;const n1=randInt(2,mx),n2=randInt(2,3);answer=Math.pow(n1,n2);text=`${n1}<sup>${n2}</sup>`;}
+    else if(op==='!'){const n=randInt(3,7);answer=factorial(n);text=`${n}!`;}
+    else if(op==='√'){const r=randInt(2,20);answer=r;text=`√${r*r}`;}
+    return{text,answer};
+}
+function genHardcoreCombined(){
+    const gens=[
+        ()=>{const r=randInt(2,10),b=randInt(2,9);return{text:`√${r*r} × ${b}`,answer:r*b};},
+        ()=>{const a=randInt(4,6),b=randInt(2,5);if(factorial(a)%b!==0)return null;return{text:`${a}! ÷ ${b}`,answer:factorial(a)/b};},
+        ()=>{const a=randInt(2,6),c=randInt(1,10);const r=Math.pow(a,2)-c;if(r<=0)return null;return{text:`${a}<sup>2</sup> − ${c}`,answer:r};},
+        ()=>{const a=randInt(4,5),b=randInt(1,15);const r=factorial(a)-b;if(r<=0)return null;return{text:`${a}! − ${b}`,answer:r};},
+        ()=>{const r=randInt(2,10),b=randInt(1,15);return{text:`√${r*r} + ${b}`,answer:r+b};},
+        ()=>{const a=randInt(2,6),b=randInt(1,20);return{text:`${a}<sup>2</sup> + ${b}`,answer:a*a+b};},
+        ()=>{const a=randInt(3,7);return{text:`${a}!`,answer:factorial(a)};},
+        ()=>{const r=randInt(2,20);return{text:`√${r*r}`,answer:r};},
+    ];
+    for(let i=0;i<20;i++){const g=pick(gens);const r=g();if(r&&r.answer>0)return r;}
+    return{text:'5 + 3',answer:8};
+}
+function genMultiTerm(d,terms,useParens){
+    let mx;
+    if(terms<=3)mx=d==='facil'?10:d==='medio'?15:d==='dificil'?25:30;
+    else if(terms<=5)mx=d==='facil'?8:d==='medio'?12:d==='dificil'?15:20;
+    else mx=d==='facil'?5:d==='medio'?8:d==='dificil'?10:12;
+    const ops=['+','-','*'];
+    for(let att=0;att<50;att++){
+        const nums=[],oprs=[];
+        for(let i=0;i<terms;i++){nums.push(randInt(1,mx));if(i<terms-1)oprs.push(pick(ops));}
+        let js=`${nums[0]}`,ps=-1,pe=-1;
+        if(useParens&&terms>=3&&Math.random()>.4){ps=randInt(0,terms-2);pe=ps+1;}
+        js='';
+        for(let i=0;i<terms;i++){if(i===ps)js+='(';js+=nums[i];if(i===pe)js+=')';if(i<terms-1)js+=` ${oprs[i]} `;}
+        const ans=safeEval(js);
+        if(ans===null||ans<=0)continue;
+        const dm={'+':'+','-':'−','*':'×'};
+        let disp='';
+        for(let i=0;i<terms;i++){if(i===ps)disp+='(';disp+=nums[i];if(i===pe)disp+=')';if(i<terms-1)disp+=` ${dm[oprs[i]]} `;}
+        return{text:disp,answer:ans};
+    }
+    const a=randInt(1,10),b=randInt(1,10);return{text:`${a} + ${b}`,answer:a+b};
+}
+
+// ===== GERADORES — GEOMETRIA =====
+function generateGeometria(){
+    let t=game.topic;if(t==='misto')t=pick(['pitagoras','tales','trigo']);
+    let p;
+    if(t==='pitagoras')p=genPitagoras();
+    else if(t==='tales')p=genTales();
+    else p=genTrig();
+    p.options=generateWrongOptions(p.answer,'medio');return p;
+}
+function genPitagoras(){
+    const t=pick(pythTriples);const mode=randInt(0,2);
+    if(mode===0)return{text:`Catetos: ${t[0]} e ${t[1]}. Hipotenusa = ?`,answer:t[2]};
+    if(mode===1)return{text:`Hipotenusa: ${t[2]}, cateto: ${t[0]}. Outro cateto = ?`,answer:t[1]};
+    return{text:`Hipotenusa: ${t[2]}, cateto: ${t[1]}. Cateto oposto = ?`,answer:t[0]};
+}
+function genTales(){
+    const k=randInt(2,4),b=randInt(3,10),d=randInt(3,10);
+    const a=k*b,c=k*d;const miss=randInt(0,3);
+    if(miss===0)return{text:`Retas paralelas: a/b = c/d com b=${b}, c=${c}, d=${d}. Valor de a?`,answer:a};
+    if(miss===1)return{text:`Retas paralelas: a/b = c/d com a=${a}, c=${c}, d=${d}. Valor de b?`,answer:b};
+    if(miss===2)return{text:`Retas paralelas: a/b = c/d com a=${a}, b=${b}, d=${d}. Valor de c?`,answer:c};
+    return{text:`Retas paralelas: a/b = c/d com a=${a}, b=${b}, c=${c}. Valor de d?`,answer:d};
+}
+function genTrig(){
+    if(Math.random()<.5){
+        const f=pick(['sen','cos','tg']);const angles=f==='tg'?[0,30,45,60]:[0,30,45,60,90];
+        const ang=pick(angles);const v=trigValues[f][ang];
+        return{text:`Qual o valor de ${f}(${ang}°)?`,answer:v};
+    }else{
+        const t=pick(pythTriples);const tp=randInt(0,2);
+        if(tp===0)return{text:`Triângulo retângulo: cateto oposto=${t[0]}, hipotenusa=${t[2]}. sen(θ)=?`,answer:Math.round(t[0]/t[2]*100)/100};
+        if(tp===1)return{text:`Triângulo retângulo: cateto adjacente=${t[1]}, hipotenusa=${t[2]}. cos(θ)=?`,answer:Math.round(t[1]/t[2]*100)/100};
+        return{text:`Triângulo retângulo: catetos ${t[0]} e ${t[1]}. tg(θ)=?`,answer:Math.round(t[0]/t[1]*100)/100};
+    }
+}
+
+// ===== GERADORES — ENEM =====
+function generateEnem(){
+    const gens=[
+        ()=>{const d=pick([10,20,30,40]);const p=randInt(5,24)*10;return{text:`Desconto de ${d}% em produto de R$ ${p}. Preço final?`,answer:Math.round(p*(1-d/100))};},
+        ()=>{const d=pick([10,15,20,25]);const p=randInt(5,20)*10;return{text:`Produto de R$ ${p} com aumento de ${d}%. Novo preço?`,answer:Math.round(p*(1+d/100))};},
+        ()=>{const w1=randInt(3,8),dd=randInt(5,15),w2=w1+randInt(1,4);const r=w1*dd/w2;if(!Number.isInteger(r)||r<=0)return null;return{text:`${w1} operários em ${dd} dias. ${w2} operários em quantos dias?`,answer:r};},
+        ()=>{const a1=randInt(2,6),v1=(randInt(2,9))*a1,a2=randInt(2,8);const r=v1*a2/a1;if(!Number.isInteger(r)||r<=0)return null;return{text:`Se ${a1} cadernos custam R$ ${v1}, quanto custam ${a2}?`,answer:r};},
+        ()=>{const b=randInt(5,20),h=randInt(3,15);return{text:`Área de retângulo: base ${b}, altura ${h}?`,answer:b*h};},
+        ()=>{const l=randInt(5,20);return{text:`Perímetro de quadrado de lado ${l}?`,answer:l*4};},
+        ()=>{const e=randInt(3,10);return{text:`Volume de cubo de aresta ${e}?`,answer:e*e*e};},
+        ()=>{const c=randInt(1,9)*100,r=randInt(2,5),m=randInt(2,6);return{text:`Juro simples: R$ ${c} a ${r}%/mês por ${m} meses?`,answer:c*r/100*m};},
+        ()=>{const d=randInt(60,360),t=randInt(2,6);if(d%t!==0)return null;return{text:`Carro percorre ${d} km em ${t} h. Velocidade média?`,answer:d/t};},
+        ()=>{const n=[randInt(1,20),randInt(1,20),randInt(1,20),randInt(1,20)];const s=n.reduce((a,b)=>a+b);if(s%4!==0)return null;return{text:`Média de ${n.join(', ')}?`,answer:s/4};},
+        ()=>{const serve=randInt(4,8),want=serve*randInt(2,4);return{text:`Receita serve ${serve}. Para ${want} pessoas, multiplique por?`,answer:want/serve};},
+        ()=>{const tot=randInt(20,60),pct=randInt(10,40);return{text:`Em ${tot} alunos, ${pct}% são meninas. Quantas?`,answer:Math.round(tot*pct/100)};},
+    ];
+    for(let i=0;i<30;i++){const g=pick(gens);const r=g();if(r&&r.answer>0){r.options=generateWrongOptions(r.answer,'medio');return r;}}
+    const a=randInt(5,20),b=randInt(5,20);return{text:`Quanto é ${a} + ${b}?`,answer:a+b,options:generateWrongOptions(a+b,'facil')};
+}
+
+// ===== GERADORES — OBMEP =====
+function generateObmep(){
+    const gens=[
+        ()=>{const s=randInt(1,10),d=randInt(2,9);const seq=[];for(let i=0;i<5;i++)seq.push(s+d*i);return{text:`Próximo da sequência: ${seq.join(', ')}, ?`,answer:s+d*5};},
+        ()=>{const s=randInt(2,5),r=randInt(2,4);const seq=[];for(let i=0;i<4;i++){const v=s*Math.pow(r,i);if(v>500)return null;seq.push(v);}const ans=s*Math.pow(r,4);if(ans>1000)return null;return{text:`Próximo da sequência: ${seq.join(', ')}, ?`,answer:ans};},
+        ()=>{const o=randInt(0,3);const seq=[];for(let i=1;i<=5;i++)seq.push((i+o)*(i+o)+1);return{text:`Próximo da sequência: ${seq.join(', ')}, ?`,answer:(6+o)*(6+o)+1};},
+        ()=>{const fib=[1,1,2,3,5,8,13,21,34,55,89,144];const si=randInt(0,4);const seq=fib.slice(si,si+5);return{text:`Próximo da sequência: ${seq.join(', ')}, ?`,answer:fib[si+5]};},
+        ()=>{const n=(randInt(2,10))*10;return{text:`Soma de 1 a ${n}?`,answer:n*(n+1)/2};},
+        ()=>{const n=randInt(5,25);return{text:`Sala com ${n} pessoas. Todos cumprimentam todos. Quantos apertos?`,answer:n*(n-1)/2};},
+        ()=>{const a=randInt(3,12),b=randInt(3,12);return{text:`MMC de ${a} e ${b}?`,answer:lcm(a,b)};},
+        ()=>{const a=randInt(10,50),b=randInt(10,50);return{text:`MDC de ${a} e ${b}?`,answer:gcd(a,b)};},
+        ()=>{const a=randInt(20,99),b=randInt(3,9);return{text:`Resto da divisão de ${a} por ${b}?`,answer:a%b};},
+        ()=>{const words=['AMOR','PACTO','LIVRO','FESTA','GATO','BRASO','TIGRE'];const w=pick(words);return{text:`Quantos anagramas de "${w}"?`,answer:factorial(w.length)};},
+        ()=>{const n=randInt(100,999);return{text:`Soma dos dígitos de ${n}?`,answer:n.toString().split('').reduce((a,b)=>a+Number(b),0)};},
+        ()=>{const s=randInt(1,10),e=s+randInt(10,25);let c=0;for(let i=s;i<=e;i++)if(i%2===0)c++;return{text:`Quantos pares de ${s} a ${e}?`,answer:c};},
+        ()=>{const n=pick([20,30,50,100]);let c=0;for(let i=2;i<=n;i++)if(isPrime(i))c++;return{text:`Quantos primos de 1 a ${n}?`,answer:c};},
+        ()=>{const e=randInt(3,8);return{text:`Valor de ${e}² ?`,answer:e*e};},
+        ()=>{const a=randInt(2,8),b=randInt(2,5);return{text:`Valor de ${a}³?`,answer:a*a*a};},
+    ];
+    for(let i=0;i<30;i++){const g=pick(gens);const r=g();if(r&&r.answer>0){r.options=generateWrongOptions(r.answer,'medio');return r;}}
+    const a=randInt(5,20),b=randInt(5,20);return{text:`Quanto é ${a} + ${b}?`,answer:a+b,options:generateWrongOptions(a+b,'facil')};
+}
+
+// ===== DISPATCHER =====
+function generateProblem(){
+    if(game.category==='aritmetica')return generateAritmetica();
+    if(game.category==='geometria')return generateGeometria();
+    if(game.category==='enem')return generateEnem();
+    if(game.category==='obmep')return generateObmep();
+}
+
+// ===== EXIBIR PROBLEMA =====
+function nextProblem(){
+    game.questionNum++;
+    game.currentProblem=generateProblem();
+    const p=game.currentProblem;
+    let html;
+    if(game.category==='aritmetica')html=`${p.text} <span class="t-eq-muted">=</span> <span class="text-indigo-400">?</span>`;
+    else html=p.text;
+    ui.equation.innerHTML=html;
+    const len=p.text.length;
+    if(len>60)ui.h2.className='font-black tracking-tight px-4 text-lg sm:text-xl leading-relaxed';
+    else if(len>35)ui.h2.className='font-black tracking-tight px-4 text-xl sm:text-2xl leading-relaxed';
+    else if(len>20)ui.h2.className='font-black tracking-tight px-4 text-2xl sm:text-3xl';
+    else ui.h2.className='font-black tracking-tight px-4 text-4xl sm:text-5xl';
+    ui.options.innerHTML='';
+    p.options.forEach(opt=>{
+        const btn=document.createElement('button');
+        btn.className='btn-option py-5 sm:py-6 text-2xl sm:text-3xl font-bold t-option rounded-2xl';
+        btn.innerText=formatOption(opt);btn.dataset.value=opt;
+        btn.onclick=()=>handleAnswer(opt,btn);
+        ui.options.appendChild(btn);
+    });
+    updateStats();
+}
+function setProblemState(s){
+    if(s){ui.problemDisplay.setAttribute('data-state',s);if(s==='correct')ui.feedbackCorrect.classList.remove('hidden');else ui.feedbackWrong.classList.remove('hidden');}
+    else{ui.problemDisplay.removeAttribute('data-state');ui.feedbackCorrect.classList.add('hidden');ui.feedbackWrong.classList.add('hidden');}
+}
+function resetOptions(){ui.options.querySelectorAll('.btn-option').forEach(b=>b.removeAttribute('data-result'));}
+
+// ===== RESPOSTA =====
+function handleAnswer(selected,btn){
+    if(game.isProcessing||!game.isActive)return;
+    game.isProcessing=true;
+    const correct=answersMatch(selected,game.currentProblem.answer);
+    if(correct){
+        game.score++;btn.setAttribute('data-result','correct');setProblemState('correct');
+        if(game.mode==='classic'&&game.timeBonus){game.timeLeft+=30;updateTimer();}
+    }else{
+        game.errors++;btn.setAttribute('data-result','wrong');
+        const cb=[...ui.options.children].find(b=>answersMatch(b.dataset.value,game.currentProblem.answer));
+        if(cb)cb.setAttribute('data-result','correct');
+        setProblemState('wrong');ui.problemDisplay.classList.add('animate-shake');
+        if(game.mode==='classic'){const pen=(game.category==='aritmetica'&&game.difficulty==='hardcore')?5:3;game.timeLeft=Math.max(0,game.timeLeft-pen);updateTimer();}
+    }
+    updateStats();
+    const pass=correct||game.wrongBehavior==='pass';
+    if(pass){
+        const dly=correct?400:800;
+        setTimeout(()=>{
+            if(!game.isActive){game.isProcessing=false;return;}
+            setProblemState(null);resetOptions();ui.problemDisplay.classList.remove('animate-shake');
+            if((game.mode==='q50'||game.mode==='q100')&&game.questionNum>=game.totalQuestions){endGame();return;}
+            nextProblem();game.isProcessing=false;
+        },dly);
+    }else{
+        setTimeout(()=>{
+            if(!game.isActive){game.isProcessing=false;return;}
+            setProblemState(null);resetOptions();ui.problemDisplay.classList.remove('animate-shake');game.isProcessing=false;
+        },500);
+    }
+}
+
+// ===== FIM DE JOGO =====
+function endGame(){clearInterval(game.timerInterval);game.timerInterval=null;game.isActive=false;showGameOver();}
+function showGameOver(){
+    ui.gameoverTitle.innerText={classic:'Fim do Tempo!',notime:'Jogo Encerrado!',q50:'50 Questões Concluídas!',q100:'100 Questões Concluídas!'}[game.mode]||'Fim de Jogo!';
+    ui.finalScore.innerText=game.score;
+    ui.finalTotal.innerText=(game.mode==='q50'||game.mode==='q100')?` / ${game.totalQuestions}`:'';
+    ui.finalErrors.innerText=game.errors;
+    const tot=game.score+game.errors;const acc=tot>0?Math.round(game.score/tot*100):0;
+    ui.finalAccuracy.innerText=`${acc}%`;
+    const key=`${game.category}_${game.mode}`;
+    if(!highScores[key]||game.score>highScores[key]){highScores[key]=game.score;localStorage.setItem('mathgenius_highscores',JSON.stringify(highScores));ui.newRecord.classList.remove('hidden');}
+    else ui.newRecord.classList.add('hidden');
+    ui.quitBtn.classList.add('hidden');showScreen('gameover');
+}
+init();
+</script>
+</body>
+</html>
